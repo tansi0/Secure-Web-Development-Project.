@@ -1,5 +1,6 @@
 <?php
 // admin dashboard  - FULL CRUD FOR ADMIN (Vulnerable)
+// First Fix - Validation and Sanitization
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.html");
@@ -7,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 }
 require 'db.php';
 
-// === HANDLE CRUD ACTIONS (DELETE MOVIE, DELETE BOOKING, ADD MOVIE, EDIT MOVIE) 
+// HANDLE CRUD ACTIONS (DELETE MOVIE, DELETE BOOKING, ADD MOVIE, EDIT MOVIE) 
 if (isset($_GET['delete_movie'])) {
     $id = $_GET['delete_movie'];
     $pdo->query("DELETE FROM movies WHERE id = $id"); 
@@ -21,18 +22,65 @@ if (isset($_GET['delete_booking'])) {
 }
 
 if (isset($_POST['add_movie'])) {
-    $title = $_POST['title'];
+    $title = trim($_POST['title']);
     $time  = $_POST['show_time'];
-    $seats = $_POST['seats'];
+    $seats = filter_var($_POST['seats'], FILTER_VALIDATE_INT);
+
+    if (empty($title) || strlen($title) > 100) {
+        echo "<script>alert('Invalid title: Must be 1-100 characters.');</script>";
+        exit();
+    }
+
+    // Rough check for datetime format (YYYY-MM-DD HH:MM)
+    if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $time)) {  
+        $time = str_replace('T', ' ', $time); 
+        if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $time)) {
+            echo "<script>alert('Invalid show time format.');</script>";
+            exit();
+        }
+    }
+
+    if ($seats === false || $seats <= 0) {
+        echo "<script>alert('Invalid seats: Must be a positive number.');</script>";
+        exit();
+    }
+
     $pdo->query("INSERT INTO movies (title, show_time, seats_available) VALUES ('$title', '$time', $seats)");
     echo "<script>alert('Movie added!');</script>";
 }
 
 if (isset($_POST['edit_movie'])) {
     $id    = $_POST['id'];
-    $title = $_POST['title'];
+    $title = trim($_POST['title']);
     $time  = $_POST['show_time'];
-    $seats = $_POST['seats'];
+    $seats = filter_var($_POST['seats'], FILTER_VALIDATE_INT);
+
+    // Validate ID (basic check)
+    if (!is_numeric($id) || $id <= 0) {
+        echo "<script>alert('Invalid movie ID.');</script>";
+        exit();
+    }
+
+    // Validate title
+    if (empty($title) || strlen($title) > 100) {
+        echo "<script>alert('Invalid title: Must be 1-100 characters.');</script>";
+        exit();
+    }
+
+    // Validate show time format (supports datetime-local → YYYY-MM-DDTHH:MM)
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $time)) {
+        $time = str_replace('T', ' ', $time); 
+        if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $time)) {
+            echo "<script>alert('Invalid show time format.');</script>";
+            exit();
+        }
+    }
+
+    // Validate seats
+    if ($seats === false || $seats < 0) {
+        echo "<script>alert('Invalid seats: Must be 0 or a positive number.');</script>";
+        exit();
+    }
     $pdo->query("UPDATE movies SET title='$title', show_time='$time', seats_available=$seats WHERE id=$id");
     echo "<script>alert('Movie updated!');</script>";
 }
@@ -62,15 +110,16 @@ if (isset($_POST['edit_movie'])) {
             <h4></i> Add New Movie</h4>
         </div>
         <div class="card-body">
+            <!-- Attributes added to the input forms to aid in validation -->
             <form method="POST" class="row g-3">
                 <div class="col-md-4">
-                    <input type="text" name="title" class="form-control" placeholder="Movie Title" required>
+                    <input type="text" name="title" class="form-control" placeholder="Movie Title" required minlength="1" maxlength="100"> 
                 </div>
                 <div class="col-md-4">
-                    <input type="text" name="show_time" class="form-control" placeholder="Show Time (e.g. 2025-12-10 19:00)" required>
+                    <input type="datetime-local" name="show_time" class="form-control" required>  <!-- Changed to datetime-local -->
                 </div>
                 <div class="col-md-2">
-                    <input type="text" name="seats" class="form-control" placeholder="Seats" required>
+                    <input type="number" name="seats" class="form-control" placeholder="Seats" required min="1">
                 </div>
                 <div class="col-md-2">
                     <button name="add_movie" class="btn btn-success w-100"><i class="fas fa-film"></i> Add Movie</button>

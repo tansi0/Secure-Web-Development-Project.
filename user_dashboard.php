@@ -1,5 +1,6 @@
 <?php
-// User Dashboard 
+// User Dashboard - vulnerable
+// First Fix - Validation and Sanitization
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'user') {
     header("Location: login.html");
@@ -41,7 +42,8 @@ require 'db.php';
                                 <input type="hidden" name="movie_id" value="<?php echo $movie['id']; ?>">
                                 <div class="mb-3">
                                     <label>Seats</label>
-                                    <input type="number" name="seats" class="form-control" required>
+                                    <!-- Added min and max attributes to ensure that user booking is within range set  -->
+                                    <input type="number" name="seats" class="form-control" required min="1" max="<?php echo $movie['seats_available']; ?>" title="Select between 1 and available seats">
                                 </div>
                                 <button type="submit" class="btn btn-danger w-100">Book</button>
                             </form>

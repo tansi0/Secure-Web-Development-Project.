@@ -1,13 +1,27 @@
 <?php
 // auth.php -  Vulnerable
+// First Vulnerability Fix - Input Validation & Sanitization
+
 session_start();
 require 'db.php';
 
 if (isset($_POST['register'])) {
-    // No Input Sanitization - xss, SQL Injection possible
-    $username = $_POST['username'];
-    $password = $_POST['password']; // stored in plaintext!
-    $role = $_POST['role']; // can be changed to "admin" from browser!
+    // Trim and validate inputs - Input validation for Regristration form
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']); // vulnerable: stored in plaintext
+    $role = $_POST['role']; // vulnerable: can be changed to "admin" from browser
+
+    // Server Validation for username input
+    if (!preg_match('/^[a-zA-Z0-9]{3,20}$/', $username)) {
+        echo "<script>alert('Username most be 3-20 alphanumeric characters.'); window.location='register.html';</script>";
+        exit();
+    }
+
+    // Server side Validation for password input
+    if (strlen($password) < 6) {
+        echo "<script>alert('Password must be at least 6 characters.'); window.location='register.html';</script>";
+        exit();
+    }
 
     // Direct query concatenation → SQL INJECTION
     $sql = "INSERT INTO users (username, password, role) VALUES ('$username', '$password', '$role')";
@@ -21,8 +35,21 @@ if (isset($_POST['register'])) {
 }
 
 if (isset($_POST['login'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    // Trim and validate inputs - Input validation for Login form
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
+
+    // Server Validation for username input
+    if (!preg_match('/^[a-zA-Z0-9]{3,20}$/', $username)) {
+        echo "<script>alert('Invalid username: Must be 3-20 alphanumeric characters.'); window.location='login.html';</script>";
+        exit();
+    }
+
+    // Server side Validation for password input
+    if (strlen($password) < 6) {
+        echo "<script>alert('Invalid password: Must be at least 6 characters.'); window.location='login.html';</script>";
+        exit();
+    }
 
     // VULNERABLE TO SQL INJECTION: ' OR '1'='1
     $sql = "SELECT * FROM users WHERE username='$username' AND password='$password'";

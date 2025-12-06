@@ -1,4 +1,5 @@
 <!-- Login to Access User/Admin Interface -->
+<!-- First Fix - Validation and Sanitization -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,11 +18,13 @@
                     <form action="auth.php" method="POST">
                         <div class="mb-3">
                             <label>Username</label>
-                            <input type="text" name="username" class="form-control" required>
+                            <!-- Added attributes to aid user input validaiton -->
+                            <input type="text" name="username" class="form-control" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9]+" title="Username must be 3-20 alphanumeric characters">
                         </div>
                         <div class="mb-3">
                             <label>Password</label>
-                            <input type="password" name="password" class="form-control" required>
+                            <!-- Added attributes to aid user input validaiton -->
+                            <input type="password" name="password" class="form-control" required minlength="6" title="Password must be at least 6 characters">
                         </div>
                         <button type="submit" name="login" class="btn btn-danger w-100">Login</button>
                     </form>
