@@ -1,0 +1,24 @@
+/* assets/style.css */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: gray;
+}
+
+.btn-danger {
+    background-color: #e50914;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #ff0a16;
+}
+
+.card {
+    background-color: rgba(0,0,0,0.85);
+    border: 1px solid #333;
+    color: aliceblue;
+}
+
+h1, h2, h5 {
+    color: white;
+}

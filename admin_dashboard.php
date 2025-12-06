@@ -1,0 +1,201 @@
+<?php
+// admin dashboard  - FULL CRUD FOR ADMIN (Vulnerable)
+session_start();
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header("Location: login.html");
+    exit();
+}
+require 'db.php';
+
+// === HANDLE CRUD ACTIONS (DELETE MOVIE, DELETE BOOKING, ADD MOVIE, EDIT MOVIE) 
+if (isset($_GET['delete_movie'])) {
+    $id = $_GET['delete_movie'];
+    $pdo->query("DELETE FROM movies WHERE id = $id"); 
+    echo "<script>alert('Movie deleted!'); window.location='admin_dashboard.php';</script>";
+}
+
+if (isset($_GET['delete_booking'])) {
+    $id = $_GET['delete_booking'];
+    $pdo->query("DELETE FROM bookings WHERE id = $id");
+    echo "<script>alert('Booking cancelled!'); window.location='admin_dashboard.php';</script>";
+}
+
+if (isset($_POST['add_movie'])) {
+    $title = $_POST['title'];
+    $time  = $_POST['show_time'];
+    $seats = $_POST['seats'];
+    $pdo->query("INSERT INTO movies (title, show_time, seats_available) VALUES ('$title', '$time', $seats)");
+    echo "<script>alert('Movie added!');</script>";
+}
+
+if (isset($_POST['edit_movie'])) {
+    $id    = $_POST['id'];
+    $title = $_POST['title'];
+    $time  = $_POST['show_time'];
+    $seats = $_POST['seats'];
+    $pdo->query("UPDATE movies SET title='$title', show_time='$time', seats_available=$seats WHERE id=$id");
+    echo "<script>alert('Movie updated!');</script>";
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard - TFX Cinema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="text-white">
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-white">Admin Dashboard</h1>
+        <a href="logout.php" class="btn btn-outline-light"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <!-- ADD NEW MOVIE -->
+    <div class="card mb-4">
+        <div class="card-header text-white">
+            <h4></i> Add New Movie</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="title" class="form-control" placeholder="Movie Title" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="show_time" class="form-control" placeholder="Show Time (e.g. 2025-12-10 19:00)" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="seats" class="form-control" placeholder="Seats" required>
+                </div>
+                <div class="col-md-2">
+                    <button name="add_movie" class="btn btn-success w-100"><i class="fas fa-film"></i> Add Movie</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MOVIES LIST WITH EDIT & DELETE -->
+    <h3 class="text-white mb-3">Manage Movies</h3>
+    <div class="table-responsive mb-5">
+        <table class="table table-dark table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Show Time</th>
+                    <th>Available Seats</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $movies = $pdo->query("SELECT * FROM movies ORDER BY show_time")->fetchAll();
+                foreach ($movies as $m) { ?>
+                    <tr>
+                        <td><?= $m['id'] ?></td>
+                        <td><?= htmlspecialchars($m['title']) ?></td>
+                        <td><?= $m['show_time'] ?></td>
+                        <td><?= $m['seats_available'] ?></td>
+                        <td>
+                            <!-- Edit Button (Modal) -->
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#edit<?= $m['id'] ?>">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <!-- Delete Button -->
+                            <a href="?delete_movie=<?= $m['id'] ?>" class="btn btn-danger btn-sm" 
+                               onclick="return confirm('Delete('movie')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="edit<?= $m['id'] ?>">
+                        <div class="modal-dialog">
+                            <form method="POST">
+                                <div class="modal-content bg-dark text-white">
+                                    <div class="modal-header">
+                                        <h5>Edit Movie</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="hidden" name="id" value="<?= $m['id'] ?>">
+                                        <div class="mb-3">
+                                            <label>Title</label>
+                                            <input type="text" name="title" value="<?= $m['title'] ?>" class="form-control" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Show Time</label>
+                                            <input type="text" name="show_time" value="<?= $m['show_time'] ?>" class="form-control" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Seats</label>
+                                            <input type="number" name="seats" value="<?= $m['seats_available'] ?>" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" name="edit_movie" class="btn btn-warning">Save Changes</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php } ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ALL BOOKINGS WITH DELETE -->
+    <h3 class="text-white mb-3">All Bookings</h3>
+    <div class="table-responsive">
+        <table class="table table-dark table-striped">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>User</th>
+                    <th>Movie</th>
+                    <th>Seats</th>
+                    <th>Booked On</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $sql = "SELECT b.id, u.username, m.title, b.seats_booked, b.booking_time 
+                        FROM bookings b 
+                        JOIN users u ON b.user_id = u.id 
+                        JOIN movies m ON b.movie_id = m.id 
+                        ORDER BY b.booking_time DESC";
+                foreach ($pdo->query($sql) as $row) { ?>
+                    <tr>
+                        <td><?= $row['id'] ?></td>
+                        <td><?= htmlspecialchars($row['username']) ?></td>
+                        <td><?= htmlspecialchars($row['title']) ?></td>
+                        <td><?= $row['seats_booked'] ?></td>
+                        <td><?= $row['booking_time'] ?></td>
+                        <td>
+                            <a href="?delete_booking=<?= $row['id'] ?>" class="btn btn-danger btn-sm"
+                               onclick="return confirm('Cancel this booking?')">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmDelete(type) {
+    return confirm(`Are you sure you want to delete this ${type}?`);
+}
+</script>
+</body>
+</html>
