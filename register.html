@@ -1,5 +1,6 @@
 <!-- Register New Users -->
 <!-- First Fix - Validation and Sanitization -->
+<!-- Next Fix - Prevent Privilege Escalation ( By removing hidden role input field) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,8 +27,7 @@
                             <!-- Added attributes to aid user input validaiton -->
                             <input type="password" name="password" class="form-control" required minlength="6" title="Password must be at least 6 characters">
                         </div>
-                        <!-- VULNERABLE: Role is in hidden field → can be changed in DevTools -->
-                        <input type="hidden" name="role" value="user">
+                        <!-- Input Field removed. User Role is set at backend-->
                         <button type="submit" name="register" class="btn btn-danger w-100">Register</button>
                     </form>
                     <p class="text-center mt-3">Already have account? <a href="login.html">Login</a></p>

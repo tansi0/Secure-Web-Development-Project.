@@ -2,6 +2,7 @@
 // auth.php -  Vulnerable
 // First Vulnerability Fix - Input Validation & Sanitization
 // Second Vulnerability Fix - Password Hashing 
+// Third Vulnerability Fix - Prevent Privilege Escalation. Prevent Role Manipulation by setting user roles to 'user' at backend.
 
 session_start();
 require 'db.php';
@@ -10,8 +11,7 @@ if (isset($_POST['register'])) {
     // Trim and validate inputs - Input validation for Regristration form
     $username = trim($_POST['username']);
     $password = trim($_POST['password']); // vulnerable: stored in plaintext
-    $role = $_POST['role']; // vulnerable: can be changed to "admin" from browser
-
+    
     // Server Validation for username input
     if (!preg_match('/^[a-zA-Z0-9]{3,20}$/', $username)) {
         echo "<script>alert('Username most be 3-20 alphanumeric characters.'); window.location='register.html';</script>";
@@ -27,6 +27,9 @@ if (isset($_POST['register'])) {
     // Hash the password
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
+    // Registered users assigned 'user' role only
+    $role = 'user'; // Admin role can only be assigned in DB 
+
     // Direct query concatenation → SQL INJECTION
     $sql = "INSERT INTO users (username, password, role) VALUES ('$username', '$hashed_password', '$role')"; //Use the hashed password in the query
     
