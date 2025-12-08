@@ -3,6 +3,7 @@
 // First Vulnerability Fix - Input Validation & Sanitization
 // Second Vulnerability Fix - Password Hashing 
 // Third Vulnerability Fix - Prevent Privilege Escalation. Prevent Role Manipulation by setting user roles to 'user' at backend.
+// Fourth Vulnerability Fix - Using Prepared Statements
 
 session_start();
 require 'db.php';
@@ -30,14 +31,15 @@ if (isset($_POST['register'])) {
     // Registered users assigned 'user' role only
     $role = 'user'; // Admin role can only be assigned in DB 
 
-    // Direct query concatenation → SQL INJECTION
-    $sql = "INSERT INTO users (username, password, role) VALUES ('$username', '$hashed_password', '$role')"; //Use the hashed password in the query
+    // Prepared Statement - Safe from SQL Injection
+    $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
     
     try {
-        $pdo->exec($sql);
+        $stmt->execute([$username, $hashed_password, $role]);
         echo "<script>alert('Registration successful!'); window.location='login.html';</script>";
-    } catch(Exception $e) {
-        echo "<script>alert('Username already exists!');</script>";
+    } catch (PDOException $e) {
+        echo "<script>alert('Username already exists!'); window.location='register.html';</script>";
     }
 }
 
@@ -58,9 +60,10 @@ if (isset($_POST['login'])) {
         exit();
     }
 
-    // VULNERABLE TO SQL INJECTION: ' OR '1'='1
-    $sql = "SELECT * FROM users WHERE username = '$username' LIMIT 1"; // Fetch user by username
-    $stmt = $pdo->query($sql);
+    // Prepraed Statement - Safe Login
+    $sql = "SELECT * FROM users WHERE username = ? LIMIT 1";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$username]);
     $user = $stmt->fetch();
 
     // Check if user exists & password is correct

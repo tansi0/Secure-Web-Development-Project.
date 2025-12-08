@@ -1,6 +1,7 @@
 <?php
 // book.php - vulnerable
 // First Fix - Validation and Sanitization - Added Validaiton and Seat Checks
+// Second Fix -  Using Prepared Statements - Prevents SQL Injection
 
 session_start();
 if (!isset($_SESSION['user_id'])) {
@@ -24,6 +25,8 @@ if (isset($_POST['seats']) && isset($_POST['movie_id'])) {
         exit();
     }
 
+    $user_id = $_SESSION['user_id'];
+
     // Check available seats
     $stmt = $pdo->prepare("SELECT seats_available FROM movies WHERE id = ?");
     $stmt->execute([$movie_id]);
@@ -33,10 +36,13 @@ if (isset($_POST['seats']) && isset($_POST['movie_id'])) {
         exit();
     }
 
-    // Proceed with booking (query method is still being used for now, but will be looked at later when tackling SQL injection fix later)
-    $pdo->query("UPDATE movies SET seats_available = seats_available - $seats WHERE id = $movie_id");
-    $pdo->query("INSERT INTO bookings (user_id, movie_id, seats_booked) VALUES ($user_id, $movie_id, $seats)");
+    // Using Prepared Statements
+    $stmt = $pdo->prepare("UPDATE movies SET seats_available = seats_available - ? WHERE id = ?");
+    $stmt->execute([$seats, $movie_id]);
 
+    $stmt = $pdo->prepare("INSERT INTO bookings (user_id, movie_id, seats_booked) VALUES (?, ?, ?)");
+    $stmt->execute([$user_id, $movie_id, $seats]);
+    
     echo "<script>alert('Booking successful!'); window.location='user_dashboard.php';</script>";
 }
 ?>
