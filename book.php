@@ -3,6 +3,8 @@
 // First Fix - Validation and Sanitization - Added Validaiton and Seat Checks
 // Second Fix -  Using Prepared Statements - Prevents SQL Injection
 // Next Fix - Race Condition Fix
+// Next Vulnerability Fix - Prevent CSRF attacks
+
 
 session_start();
 if (!isset($_SESSION['user_id'])) {
@@ -10,7 +12,14 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 require 'db.php';
+require_once 'includes/csrf.php';  // Load CSRF protection
 
+//  CSRF Protection: Reject request if token is  invalid 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        die('CSRF validation failed.');
+    }
+}
 if (isset($_POST['seats']) && isset($_POST['movie_id'])) {
     $movie_id = filter_var($_POST['movie_id'], FILTER_VALIDATE_INT); // formatted the code better.
     $seats    = filter_var($_POST['seats'], FILTER_VALIDATE_INT); 

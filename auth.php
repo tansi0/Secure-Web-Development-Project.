@@ -4,9 +4,19 @@
 // Second Vulnerability Fix - Password Hashing 
 // Third Vulnerability Fix - Prevent Privilege Escalation. Prevent Role Manipulation by setting user roles to 'user' at backend.
 // Fourth Vulnerability Fix - Using Prepared Statements
+// Fifth Vulnerability Fix - CSRF Protection
 
 session_start();
 require 'db.php';
+
+require_once 'includes/csrf.php';  // Load CSRF protection
+
+//  CSRF Protection: Reject request if token is  invalid 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        die('CSRF validation failed');
+    }
+}
 
 if (isset($_POST['register'])) {
     // Trim and validate inputs - Input validation for Regristration form

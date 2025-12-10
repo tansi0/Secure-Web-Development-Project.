@@ -2,13 +2,27 @@
 // admin dashboard  - FULL CRUD FOR ADMIN (Vulnerable)
 // First Fix - Validation and Sanitization
 // Second Fix -  Using Prepared Statements to prevent SQL Injection
+// Next Fix - CSRF Protection
+
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.html");
     exit();
 }
 require 'db.php';
+require_once 'includes/csrf.php';  // Load CSRF protection
 
+//  CSRF Protection: Reject request if token is  invalid 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        die('CSRF validation failed.');
+    }
+}
+if (isset($_GET['delete_movie']) || isset($_GET['delete_booking'])) {
+    if (!isset($_GET['csrf_token']) || !verify_csrf_token($_GET['csrf_token'])) {
+        die('CSRF validation failed.');
+    }
+}
 // HANDLE CRUD ACTIONS (DELETE MOVIE, DELETE BOOKING, ADD MOVIE, EDIT MOVIE) 
 // Secured Delete Movie
 if (isset($_GET['delete_movie'])) {
@@ -86,6 +100,8 @@ if (isset($_POST['edit_movie'])) {
         <div class="card-body">
             <!-- Attributes added to the input forms to aid in validation -->
             <form method="POST" class="row g-3">
+                <!-- CSRF Token  -->
+                <?php csrf_field(); ?>
                 <div class="col-md-4">
                     <input type="text" name="title" class="form-control" placeholder="Movie Title" required minlength="1" maxlength="100"> 
                 </div>
@@ -130,9 +146,8 @@ if (isset($_POST['edit_movie'])) {
                                 <i class="fas fa-edit"></i>
                             </button>
                             <!-- Delete Button -->
-                            <a href="?delete_movie=<?= $m['id'] ?>" class="btn btn-danger btn-sm" 
-                               onclick="return confirm('Delete('movie')">
-                                <i class="fas fa-trash"></i>
+                            <a href="?delete_movie=<?= $m['id'] ?>&csrf_token=<?= csrf_token() ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this movie?')">
+                                 <i class="fas fa-trash"></i>
                             </a>
                         </td>
                     </tr>
@@ -141,6 +156,8 @@ if (isset($_POST['edit_movie'])) {
                     <div class="modal fade" id="edit<?= $m['id'] ?>">
                         <div class="modal-dialog">
                             <form method="POST">
+                                <!-- CSRF Token  -->
+                                <?php csrf_field(); ?>
                                 <div class="modal-content bg-dark text-white">
                                     <div class="modal-header">
                                         <h5>Edit Movie</h5>

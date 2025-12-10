@@ -1,6 +1,8 @@
 <?php
 // User Dashboard - vulnerable
 // First Fix - Validation and Sanitization
+// Next Fix - CSRF Protection
+
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'user') {
     header("Location: login.html");
@@ -39,6 +41,8 @@ require 'db.php';
                             <p><strong>Show Time:</strong> <?php echo $movie['show_time']; ?></p>
                             <p><strong>Seats Left:</strong> <?php echo $movie['seats_available']; ?></p>
                             <form action="book.php" method="POST">
+                                <!-- CSRF Token  -->
+                                <?php csrf_field(); ?>
                                 <input type="hidden" name="movie_id" value="<?php echo $movie['id']; ?>">
                                 <div class="mb-3">
                                     <label>Seats</label>
