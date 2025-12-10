@@ -2,6 +2,7 @@
 // book.php - vulnerable
 // First Fix - Validation and Sanitization - Added Validaiton and Seat Checks
 // Second Fix -  Using Prepared Statements - Prevents SQL Injection
+// Next Fix - Race Condition Fix
 
 session_start();
 if (!isset($_SESSION['user_id'])) {
@@ -11,38 +12,50 @@ if (!isset($_SESSION['user_id'])) {
 require 'db.php';
 
 if (isset($_POST['seats']) && isset($_POST['movie_id'])) {
-    // Validate movie_id: must be positive integer
-    $movie_id = filter_var($_POST['movie_id'], FILTER_VALIDATE_INT);
-    if ($movie_id === false || $movie_id <= 0) {
-        echo "<script>alert('Invalid movie selection.'); window.location='user_dashboard.php';</script>";
+    $movie_id = filter_var($_POST['movie_id'], FILTER_VALIDATE_INT); // formatted the code better.
+    $seats    = filter_var($_POST['seats'], FILTER_VALIDATE_INT); 
+    $user_id  = $_SESSION['user_id'];
+
+    // Validate movie_id and Seats: must be positive integer
+    if ($movie_id <= 0 || $seats <= 0) {
+        echo "<script>alert('Invalid movie or number of seats.'); window.location='user_dashboard.php';</script>";
         exit();
     }
 
-    // Validate seats: positive integer
-    $seats = filter_var($_POST['seats'], FILTER_VALIDATE_INT);
-    if ($seats === false || $seats <= 0) {
-        echo "<script>alert('Invalid number of seats: Must be a positive number.'); window.location='user_dashboard.php';</script>";
-        exit();
+    // Start Transcation – This is fix for race condition 
+    $pdo->beginTransaction();
+
+    try {
+        // Prevents another user from modifying movie booking section when a previous user is trying to modify and commit changes
+        
+        // Check available seats
+        $stmt = $pdo->prepare("SELECT seats_available FROM movies WHERE id = ? FOR UPDATE");
+        $stmt->execute([$movie_id]);
+        $movie = $stmt->fetch();
+
+        if (!$movie) {
+            throw new Exception("Movie not found.");
+        }
+
+        if ($seats > $movie['seats_available']) {
+            throw new Exception("Not enough seats available. Only {$movie['seats_available']} left.");
+        }
+
+        // Using Prepared Statements to Book Movies
+        $stmt = $pdo->prepare("UPDATE movies SET seats_available = seats_available - ? WHERE id = ?");
+        $stmt->execute([$seats, $movie_id]);
+
+        $stmt = $pdo->prepare("INSERT INTO bookings (user_id, movie_id, seats_booked) VALUES (?, ?, ?)");
+        $stmt->execute([$user_id, $movie_id, $seats]);
+        
+        // Commit the transaction
+        $pdo->commit();
+
+        echo "<script>alert('Booking successful!'); window.location='user_dashboard.php';</script>";
+    } catch (Exception $e) {
+        // If there is a failure → rollback everything
+        $pdo->rollBack();
+        echo "<script>alert('Booking failed: " . $e->getMessage() . "'); window.location='user_dashboard.php';</script>";
     }
-
-    $user_id = $_SESSION['user_id'];
-
-    // Check available seats
-    $stmt = $pdo->prepare("SELECT seats_available FROM movies WHERE id = ?");
-    $stmt->execute([$movie_id]);
-    $movie = $stmt->fetch();
-    if (!$movie || $seats > $movie['seats_available']) {
-        echo "<script>alert('Not enough seats available or invalid movie.'); window.location='user_dashboard.php';</script>";
-        exit();
-    }
-
-    // Using Prepared Statements
-    $stmt = $pdo->prepare("UPDATE movies SET seats_available = seats_available - ? WHERE id = ?");
-    $stmt->execute([$seats, $movie_id]);
-
-    $stmt = $pdo->prepare("INSERT INTO bookings (user_id, movie_id, seats_booked) VALUES (?, ?, ?)");
-    $stmt->execute([$user_id, $movie_id, $seats]);
-    
-    echo "<script>alert('Booking successful!'); window.location='user_dashboard.php';</script>";
 }
 ?>
