@@ -3,6 +3,11 @@
 <!-- Next Fix - Prevent Privilege Escalation ( By removing hidden role input field) -->
 <!-- Next Fix - CSRF Protection -->
 
+<?php
+session_start();  
+require_once 'includes/csrf.php'; 
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +39,8 @@
                         <!-- Input Field removed. User Role is set at backend-->
                         <button type="submit" name="register" class="btn btn-danger w-100">Register</button>
                     </form>
-                    <p class="text-center mt-3">Already have account? <a href="login.html">Login</a></p>
+                    <!-- Updated Login link -->
+                    <p class="text-center mt-3">Already have account? <a href="login.php">Login</a></p>
                     <a href="index.html" class="btn btn-secondary w-100 mt-2">Back</a>
                 </div>
             </div>

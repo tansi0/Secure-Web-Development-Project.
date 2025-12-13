@@ -6,11 +6,15 @@
 
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: login.html");
+    header("Location: login.php");
     exit();
 }
+
 require 'db.php';
 require_once 'includes/csrf.php';  // Load CSRF protection
+
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 
 //  CSRF Protection: Reject request if token is  invalid 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -18,29 +22,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die('CSRF validation failed.');
     }
 }
-if (isset($_GET['delete_movie']) || isset($_GET['delete_booking'])) {
-    if (!isset($_GET['csrf_token']) || !verify_csrf_token($_GET['csrf_token'])) {
-        die('CSRF validation failed.');
-    }
-}
+
 // HANDLE CRUD ACTIONS (DELETE MOVIE, DELETE BOOKING, ADD MOVIE, EDIT MOVIE) 
 // Secured Delete Movie
-if (isset($_GET['delete_movie'])) {
-    $id = filter_var($_GET['delete_movie'], FILTER_VALIDATE_INT);
+if (isset($_POST['delete_movie'])) {
+    $id = filter_var($_POST['delete_movie'], FILTER_VALIDATE_INT);
     if ($id !== false && $id > 0) {
         $stmt = $pdo->prepare("DELETE FROM movies WHERE id = ?");
         $stmt->execute([$id]);
-        echo "<script>alert('Movie deleted!'); window.location='admin_dashboard.php';</script>";
+        $_SESSION['flash'] = 'Movie deleted!';
+        header("Location: admin_dashboard.php");
+        exit();
     }
 }
 
 // Secured Delete Booking
-if (isset($_GET['delete_booking'])) {
-    $id = filter_var($_GET['delete_booking'], FILTER_VALIDATE_INT);
+if (isset($_POST['delete_booking'])) {
+    $id = filter_var($_POST['delete_booking'], FILTER_VALIDATE_INT);
     if ($id !== false && $id > 0) {
         $stmt = $pdo->prepare("DELETE FROM bookings WHERE id = ?");
         $stmt->execute([$id]);
-        echo "<script>alert('Booking cancelled!'); window.location='admin_dashboard.php';</script>";
+        $_SESSION['flash'] = 'Bokking deleted!';
+        header("Location: admin_dashboard.php");
+        exit();
     }
 }
 
@@ -55,7 +59,9 @@ if (isset($_POST['add_movie'])) {
     } else {
         $stmt = $pdo->prepare("INSERT INTO movies (title, show_time, seats_available) VALUES (?, ?, ?)");
         $stmt->execute([$title, $time, $seats]);
-        echo "<script>alert('Movie added!');</script>";
+        $_SESSION['flash'] = 'Movie Added!';
+        header("Location: admin_dashboard.php");
+        exit();
     }
 }
 
@@ -69,9 +75,12 @@ if (isset($_POST['edit_movie'])) {
     if ($id && !empty($title) && $seats !== false && $seats >= 0) {
         $stmt = $pdo->prepare("UPDATE movies SET title = ?, show_time = ?, seats_available = ? WHERE id = ?");
         $stmt->execute([$title, $time, $seats, $id]);
-        echo "<script>alert('Movie updated!');</script>";
+        $_SESSION['flash'] = 'Movie updated!';
+        header("Location: admin_dashboard.php");
+        exit();
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -91,6 +100,12 @@ if (isset($_POST['edit_movie'])) {
         <h1 class="text-white">Admin Dashboard</h1>
         <a href="logout.php" class="btn btn-outline-light"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
+    <?php if ($flash): ?>
+    <div class="alert alert-info alert-dismissible fade show">
+        <?= htmlspecialchars($flash) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
 
     <!-- ADD NEW MOVIE -->
     <div class="card mb-4">
@@ -146,9 +161,13 @@ if (isset($_POST['edit_movie'])) {
                                 <i class="fas fa-edit"></i>
                             </button>
                             <!-- Delete Button -->
-                            <a href="?delete_movie=<?= $m['id'] ?>&csrf_token=<?= csrf_token() ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this movie?')">
-                                 <i class="fas fa-trash"></i>
-                            </a>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Delete this movie?');">
+                                <?php csrf_field(); ?>
+                                <input type="hidden" name="delete_movie" value="<?= $m['id'] ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
 
@@ -171,7 +190,7 @@ if (isset($_POST['edit_movie'])) {
                                         </div>
                                         <div class="mb-3">
                                             <label>Show Time</label>
-                                            <input type="text" name="show_time" value="<?= $m['show_time'] ?>" class="form-control" required>
+                                            <input type="datetime-local" name="show_time" value="<?= date('Y-m-d\TH:i', strtotime($m['show_time'])) ?>" class="form-control" required>
                                         </div>
                                         <div class="mb-3">
                                             <label>Seats</label>
@@ -221,10 +240,13 @@ if (isset($_POST['edit_movie'])) {
                         <td><?= $row['seats_booked'] ?></td>
                         <td><?= $row['booking_time'] ?></td>
                         <td>
-                            <a href="?delete_booking=<?= $row['id'] ?>" class="btn btn-danger btn-sm"
-                               onclick="return confirm('Cancel this booking?')">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
+                            <form method="POST" class="d-inline" onsubmit="return confirm('Cancel this booking?');">
+                                <?php csrf_field(); ?>
+                                <input type="hidden" name="delete_booking" value="<?= $row['id'] ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 <?php } ?>

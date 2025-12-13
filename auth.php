@@ -25,13 +25,13 @@ if (isset($_POST['register'])) {
     
     // Server Validation for username input
     if (!preg_match('/^[a-zA-Z0-9]{3,20}$/', $username)) {
-        echo "<script>alert('Username most be 3-20 alphanumeric characters.'); window.location='register.html';</script>";
+        echo "<script>alert('Username most be 3-20 alphanumeric characters.'); window.location='register.php';</script>";
         exit();
     }
 
     // Server side Validation for password input
     if (strlen($password) < 6) {
-        echo "<script>alert('Password must be at least 6 characters.'); window.location='register.html';</script>";
+        echo "<script>alert('Password must be at least 6 characters.'); window.location='register.php';</script>";
         exit();
     }
 
@@ -47,9 +47,9 @@ if (isset($_POST['register'])) {
     
     try {
         $stmt->execute([$username, $hashed_password, $role]);
-        echo "<script>alert('Registration successful!'); window.location='login.html';</script>";
+        echo "<script>alert('Registration successful!'); window.location='login.php';</script>";
     } catch (PDOException $e) {
-        echo "<script>alert('Username already exists!'); window.location='register.html';</script>";
+        echo "<script>alert('Username already exists!'); window.location='register.php';</script>";
     }
 }
 
@@ -60,13 +60,13 @@ if (isset($_POST['login'])) {
 
     // Server Validation for username input
     if (!preg_match('/^[a-zA-Z0-9]{3,20}$/', $username)) {
-        echo "<script>alert('Invalid username: Must be 3-20 alphanumeric characters.'); window.location='login.html';</script>";
+        echo "<script>alert('Invalid username: Must be 3-20 alphanumeric characters.'); window.location='login.php';</script>";
         exit();
     }
 
     // Server side Validation for password input
     if (strlen($password) < 6) {
-        echo "<script>alert('Invalid password: Must be at least 6 characters.'); window.location='login.html';</script>";
+        echo "<script>alert('Invalid password: Must be at least 6 characters.'); window.location='login.php';</script>";
         exit();
     }
 
@@ -89,7 +89,7 @@ if (isset($_POST['login'])) {
         }
         exit();
     } else {
-        echo "<script>alert('Invalid credentials!'); window.location='login.html';</script>";
+        echo "<script>alert('Invalid credentials!'); window.location='login.php';</script>";
     }
 }
 ?>

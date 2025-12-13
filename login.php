@@ -1,6 +1,12 @@
 <!-- Login to Access User/Admin Interface -->
 <!-- First Fix - Validation and Sanitization -->
 <!-- Next Fix - CSRF Protection -->
+
+<?php
+session_start();  
+require_once 'includes/csrf.php';  
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +37,8 @@
                         </div>
                         <button type="submit" name="login" class="btn btn-danger w-100">Login</button>
                     </form>
-                    <p class="text-center mt-3">New User? <a href="register.html">Register</a></p>
+                    <!-- Updated Registration link -->
+                    <p class="text-center mt-3">New User? <a href="register.php">Register</a></p>
                     <a href="index.html" class="btn btn-secondary w-100 mt-2">Back</a>
                 </div>
             </div>

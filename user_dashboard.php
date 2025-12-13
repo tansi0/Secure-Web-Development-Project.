@@ -5,10 +5,11 @@
 
 session_start();
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'user') {
-    header("Location: login.html");
+    header("Location: login.php");
     exit();
 }
 require 'db.php';
+require_once 'includes/csrf.php'; 
 ?>
 
 <!DOCTYPE html>
